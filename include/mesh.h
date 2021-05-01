@@ -2,7 +2,7 @@
 #define MESH_H
 
 #include "vec3.h"
-#include "triangle.h"
+#include "primitives/triangle.h"
 #include <vector>
 #include <stdlib.h>
 #include <iostream>
@@ -64,7 +64,7 @@ mesh::mesh(const string filename, const color& kDiffuse, material* m) {
 void mesh::calculate_normals() {
     vector<vec3> normals(vertices.size());
     
-    for (int i = 0; i < faces.size(); i++) {
+    for (unsigned i = 0; i < faces.size(); i++) {
         vec3 normal = 0.5 * faces[i]->surface_normal(point3(0.0,0.0,0.0));
         vec3 index = *indices[i];
 
@@ -73,12 +73,12 @@ void mesh::calculate_normals() {
         normals[index.z()] = (normal) + normals[index.z()];
     }
 
-    for (int i = 0; i < normals.size(); i++) {
+    for (unsigned i = 0; i < normals.size(); i++) {
         normals[i] = unit_vector(normals[i]);
     }
 
     // store the per vertex normal in the triangle
-    for (int i = 0; i < faces.size(); i++) {
+    for (unsigned i = 0; i < faces.size(); i++) {
         triangle* t = (triangle*) faces[i];
         vec3* index = indices[i];
         t->set_vertex_normals(normals[index->x()], normals[index->y()], normals[index->z()]);

@@ -85,7 +85,7 @@ bvh_node::bvh_node(const vector<objs*>& objects) {
         double min[3];
         double max[3];
         bool first = true;
-        for (int o = 0; o < objs_list.size(); o++) {
+        for (unsigned o = 0; o < objs_list.size(); o++) {
             for (int i = 0; i < 3; i++) {
                 double var = objs_list[o]->bounding_box().centroid()[i];
                 if (first) {
@@ -121,7 +121,7 @@ bvh_node::bvh_node(const vector<objs*>& objects) {
         auto median_split = (max[axis] + min[axis]) / 2;
         vector<objs*> left_split;
         vector<objs*> right_split;
-        for (int o = 0; o < objs_list.size(); o++) {
+        for (unsigned o = 0; o < objs_list.size(); o++) {
             double curr = objs_list[o]->bounding_box().centroid()[axis];
             if (curr >= median_split) {
                 right_split.push_back(objs_list[o]);

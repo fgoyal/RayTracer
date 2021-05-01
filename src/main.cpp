@@ -8,12 +8,15 @@
 #include "material.h"
 
 #include "objs.h"
-#include "plane.h"
-#include "sphere.h"
-#include "rectangle.h"
-#include "triangle.h"
+#include "primitives/plane.h"
+#include "primitives/sphere.h"
+#include "primitives/rectangle.h"
+#include "primitives/triangle.h"
 #include "aabb.h"
 #include "bvh_node.h"
+
+#include "png/png.h"
+#include "png/rgba_pixel.h"
 
 #include <iostream>
 #include <vector>
@@ -28,12 +31,14 @@ using std::string;
 using std::vector;
 using std::numeric_limits;
 
+using rudnick_rt::PNG;
+
 
 // --------------------------------------- VARIABLES --------------------------------------- //
-static bool perspective = false;
-static bool jittering = false;
-static const int fine_grid = 400;
-static int coarse_grid = (int) sqrt(fine_grid);
+static bool perspective = true;
+static bool multisampling = true;
+static const int fine_grid = 64;
+static int coarse_grid = (int) std::sqrt(fine_grid);
 const int max_depth = 50;
 double infinity = numeric_limits<double>::infinity();
 
@@ -47,10 +52,10 @@ const float viewport_width = 4.0;
 const float s = viewport_width / image_width;
 const vec3 direction = vec3(0, 0, -1);
 
-// const point3 eyepoint = point3(-0.5, 1.0, 1);
-const point3 eyepoint = point3(0,0,0);
+// const point3 eyepoint = point3(0, 1, 10);
+const point3 eyepoint = point3(0, 0, 0);
 const vec3 viewDir = point3(0, 0, -1);
-const vec3 up = vec3(0,1,0);
+const vec3 up = vec3(0, 1, 0);
 double dir = 2.0;
 
 const camera cam = camera(eyepoint, viewDir, up, dir, image_width, image_height, s);
@@ -221,6 +226,7 @@ color shoot_one_ray(vec3& pixel_center) {
 color shoot_multiple_rays(int i, int j) {
     bool** multi_jitter_mask = get_multi_jitter_mask(fine_grid);
     vector<color> colors;
+
     for (int k = 0; k < fine_grid; k++) {
         for (int l = 0; l < fine_grid; l++) {
             if (multi_jitter_mask[k][l]) {
@@ -230,6 +236,7 @@ color shoot_multiple_rays(int i, int j) {
             }
         }
     }
+
     return get_average_color(colors);
 }
 
@@ -347,7 +354,7 @@ void create_mesh() {
 }
 
 /**
- * Checks command line arguments for "p" and "j" to set perspective projection and jittering respectively
+ * Checks command line arguments for "p" and "j" to set perspective projection and multisampling respectively
  */
 void set_command_line_args(int argc, char* argv[]) {
     if (argc > 1) {
@@ -357,48 +364,82 @@ void set_command_line_args(int argc, char* argv[]) {
             }
 
             if (!string(argv[i]).compare("j")) {
-                jittering = true;
+                multisampling = true;
             }
         }
     }
 }
 
-// Creates the objects and renders the scene with/without jittering in either perspective or orthographic
+/**
+ * The main rendering program.
+ * Takes in optional command line arguments.
+ */
 int main(int argc, char* argv[]) {
+    // Get a name for the output image file.
+    std::string image_name;
+    std::cout << "Enter a name for the new image: ";
+    std::cin >> image_name;
+    std::cout << std::endl;
+
+    // Start a timer to time the rendering process.
     std::clock_t start;
     double duration;
     start = std::clock();
 
+    // Initialize RNG
     srand(time(NULL));
     set_command_line_args(argc, argv);
 
+    // Set up the scene.
     generate_checkerboard(-0.5, light_gray, dark_gray);
     add_objects();
     // add_random_spheres();
     add_area_lights2();
     root = bvh_node(objects);
 
+    // Print performance info
+    cout << "Image dimensions: " << image_width << "x" << image_height << "\n";
+    cout << "Number of primitives: " << objects.size() << "\n";
+
     // create_mesh();
     duration = (std::clock() - start) / (double) CLOCKS_PER_SEC;
-    cerr << "\nduration to construct tree is: " << duration << "\n";
+    cout << "Time to construct BVH tree: " << duration << " seconds\n";
 
-    cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-    for (int j = image_height - 1; j >=0; j--) {
-        cerr << "\rScanlines done: " << j << ' ' << std::flush;
+    // Simple data structure to store pixel data for the PNG output
+    PNG* image = new PNG(image_width, image_height);
+
+    // Main rendering loop
+    for (int j = 0; j < image_height; ++j) {
+        cout << "\rScanlines remaining: " << image_height-j << ' ' << std::flush;
+
         for (int i = 0; i < image_width; ++i) {
-            if (jittering) {
-                color average = shoot_multiple_rays(i, j);
-                write_color(cout, average);
-            } else {
-                vec3 pixel_center = get_pixel_center(i, j);
-                color pixel_color = shoot_one_ray(pixel_center);
-                write_color(cout, pixel_color);
+            color pixel_color(0.0, 0.0, 0.0);
+            if (multisampling) {
+                pixel_color = shoot_multiple_rays(i, j);
             }
+            else {
+                vec3 pixel_center = get_pixel_center(i, j);
+                pixel_color = shoot_one_ray(pixel_center);
+            }
+
+            // PNG image format is upside-down, so (0,0) is the top-left corner
+            // so we have to give image_height-1-j as the y-coordinate.
+            image->setPixel(i, image_height-1-j,
+                            pixel_color.x(),
+                            pixel_color.y(),
+                            pixel_color.z());
         }
     }
+    cout << "\n\n";
+
+    image->writeToFile("renders/" + image_name + ".png");
+    delete image;
+    cout << "Image saved as renders/" << image_name << ".png\n";
 
     duration = (std::clock() - start) / (double) CLOCKS_PER_SEC;
-    cerr << "\nduration with " << objects.size() << " objects is: " << duration << "\n";
+    cout << "Total rendering time: " << duration << "\n";
 
-    cerr << "\nDone.\n";
+    cout << "\nDone!\n";
+
+    return 0;
 }
