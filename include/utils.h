@@ -63,4 +63,16 @@ inline vec3 random_unit_vector() {
     return unit_vector(random_in_unit_sphere());
 }
 
+/**
+ * Clamps a value to a range if it is outside of that range.
+ * @param x The value to clamp.
+ * @param min The minimum value to allow x to be.
+ * @param max The maximum value to allow x to be.
+ */
+inline double clamp(double x, double min, double max) {
+    if (x < min) return min;
+    if (x > max) return max;
+    return x;
+}
+
 #endif

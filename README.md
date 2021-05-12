@@ -1,3 +1,7 @@
+## How to compile
+type ./make to compile everything in a linux terminal using gcc.
+If you want to compile for a different platform, you're on your own.
+
 ## Whitted Ray Tracing
 A ray tracer that includes mirror-like objects, transparent objects, and area lights
 
