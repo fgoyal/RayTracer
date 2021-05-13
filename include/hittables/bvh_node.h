@@ -1,43 +1,54 @@
 #ifndef BVH_NODE_H
 #define BVH_NODE_H
 
-#include "objs.h"
-#include "vec3.h"
+#include "aabb.h"
 #include "ray.h"
 #include "utils.h"
-#include "aabb.h"
+#include "vec3.h"
+#include "hittables/hittable.h"
+#include "hittables/hittable_list.h"
+
 #include <algorithm>
 #include <vector>
 #include <cstdlib>
 
 using std::vector;
 
-class bvh_node : public objs {
+class bvh_node : public hittable {
     public: 
-        bvh_node() {};
-        bvh_node(const vector<objs*>& objects);
+        /**
+         * Constructs an empty BVH tree node.
+         */
+        bvh_node() {}
 
-        std::string type() const {
+        /**
+         * Constructs a BVH subtree from a list of objects.
+         */
+        bvh_node(const vector<shared_ptr<hittable>>& objects);
+
+        /**
+         * Constructs a BVH subtree from a list of objects.
+         */
+        bvh_node(const hittable_list& list)
+        : bvh_node(list.objects_) {}
+
+        /**
+         * @return The type of hittable this is ("bvh node")
+         */
+        virtual std::string type() const override {
             return "bvh node";
         }
 
-        virtual color kDiffuse() const;
-        virtual vec3 surface_normal(const point3 position) const;
-        virtual bool ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const;
-        virtual aabb bounding_box() const;
+        virtual vec3 surface_normal(const point3 position) const override;
+        virtual bool hit(const ray& r, hit_record& rec, double tmin, double tmax) const override;
+        virtual aabb bounding_box() const override;
 
     public:
-        objs* left;
-        objs* right;
+        shared_ptr<hittable> left;
+        shared_ptr<hittable> right;
         aabb bbox;
 };
 
-/**
- * This function should never be used
- */
-color bvh_node::kDiffuse() const {
-    return color(-10,-10,-10);
-}
 
 /**
  * This function should never be used
@@ -47,13 +58,13 @@ vec3 bvh_node::surface_normal(const point3 position) const {
 }
 
 
-bool bvh_node::ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const {
-    if (!bbox.ray_intersection(r, tmin, tmax)) {
+bool bvh_node::hit(const ray& r, hit_record& rec, double tmin, double tmax) const {
+    if (!bbox.hit(r, tmin, tmax)) {
         return false;
     }
     
-    double hit_left = left->ray_intersection(r, rec, tmin, tmax);
-    double hit_right = right->ray_intersection(r, rec, tmin, hit_left ? rec.t : tmax);
+    double hit_left = left->hit(r, rec, tmin, tmax);
+    double hit_right = right->hit(r, rec, tmin, hit_left ? rec.t : tmax);
     return hit_left || hit_right;
 }
 
@@ -70,8 +81,8 @@ aabb bvh_node::bounding_box() const {
  * @param start: the starting index of objects to look at
  * @param end: the ending index of objects to look at
  */
-bvh_node::bvh_node(const vector<objs*>& objects) {
-    vector<objs*> objs_list = objects;
+bvh_node::bvh_node(const vector<shared_ptr<hittable>>& objects) {
+    vector<shared_ptr<hittable>> objs_list = objects;
     if (objs_list.size() == 0) {
         return;
     }
@@ -119,8 +130,8 @@ bvh_node::bvh_node(const vector<objs*>& objects) {
 
         // sort objects based on median split
         auto median_split = (max[axis] + min[axis]) / 2;
-        vector<objs*> left_split;
-        vector<objs*> right_split;
+        vector<shared_ptr<hittable>> left_split;
+        vector<shared_ptr<hittable>> right_split;
         for (unsigned o = 0; o < objs_list.size(); o++) {
             double curr = objs_list[o]->bounding_box().centroid()[axis];
             if (curr >= median_split) {
@@ -133,13 +144,13 @@ bvh_node::bvh_node(const vector<objs*>& objects) {
         if (left_split.size() == 1) {
             left = left_split[0];
         } else {
-            left = new bvh_node(left_split);
+            left = make_shared<bvh_node>(left_split);
         }
 
         if (right_split.size() == 1) {
             right = right_split[0];
         } else {
-            right = new bvh_node(right_split);
+            right = make_shared<bvh_node>(right_split);
         }
     }
 

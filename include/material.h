@@ -1,10 +1,17 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-struct hit_record; 
+#include <memory>
+
+#include "ray.h"
+#include "utils.h"
+#include "vec3.h"
+#include "hittables/hittable.h"
+#include "texture/texture.h"
+
 
 /**
- * Abstract class for material
+ * Abstract class for materials.
  */
 class material {
     public:
@@ -16,7 +23,7 @@ class material {
          * @return true if ray is scattered, false otherwise
          */
         virtual bool scatter(
-            const ray& r, const hit_record& rec, ray& scattered
+            const ray& r, const hit_record& rec, ray& scattered, color& attenuation
         ) const = 0;
 
         /**
@@ -33,14 +40,20 @@ class material {
  */
 class lambertian : public material {
     public: 
-        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered) const override {
+        lambertian(const color& mat_color) : c(mat_color) {}
+
+        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override {
             vec3 scatter_direction = rec.normal + random_unit_vector();
             if (scatter_direction.near_zero()) {
                 scatter_direction = rec.normal;
             }
-            scattered = ray(rec.p, scatter_direction);
+            scattered = ray(rec.point, scatter_direction);
+            attenuation = this->c;
             return true;
         }
+    
+    public:
+        color c;
 };
 
 /**
@@ -48,13 +61,17 @@ class lambertian : public material {
  */
 class mirror : public material {
     public: 
-        mirror(double f) : fuzz(f < 1 ? f : 1) {}
-        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered) const override{
+        mirror(const color& mat_color, double f) : c(mat_color), fuzz(f < 1 ? f : 1) {}
+
+        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             vec3 reflected = reflect(r.direction(), rec.normal);
-            scattered = ray(rec.p, reflected + fuzz * random_in_unit_sphere());
+            scattered = ray(rec.point, reflected + fuzz * random_in_unit_sphere());
+            attenuation = this->c;
             return (dot(scattered.direction(), rec.normal) > 0);
         }
+
     public:
+        color c;
         double fuzz;
 };
 
@@ -63,8 +80,9 @@ class mirror : public material {
  */
 class glass : public material {
     public: 
-        glass(double index) : ior(index) {}
-        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered) const override{
+        glass(const color& mat_color, double index) : c(mat_color), ior(index) {}
+
+        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             double refraction_ratio;
             vec3 n = rec.normal;
             if (dot(r.direction(), rec.normal) < 0) {
@@ -84,11 +102,13 @@ class glass : public material {
             } else {
                 direction = refract(unit_direction, n, refraction_ratio);
             }
-            scattered = ray(rec.p, direction);
+            scattered = ray(rec.point, direction);
+            attenuation = this->c;
             return true;
         }
 
     public:
+        color c;
         double ior;
     
     private: 
@@ -108,12 +128,13 @@ class glass : public material {
 class area_light : public material {
     public: 
         area_light(const color& emit) : c(emit) {}
-        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered) const override{
+        virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             return false;
         }
         virtual color emitted() const override {
-            return c;
+            return this->c;
         }
+
     public:
         color c;
 };

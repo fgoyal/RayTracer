@@ -68,8 +68,7 @@ include $(DEPENDENCIES)
 
 # Clear the build directory and the compiled executable
 clean:
-	rm -f $(BUILD_DIR)/*
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(BUILD_DIR)/*.o $(BUILD_DIR)/*.d $(BUILD_DIR)/*/*.o $(BUILD_DIR)/*/*.d
 
 info:
 	@echo "[*] Application dir: ${BIN_DIR}     "

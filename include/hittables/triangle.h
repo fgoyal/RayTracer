@@ -1,20 +1,21 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-#include "objs.h"
-#include "vec3.h"
-#include "ray.h"
 #include "aabb.h"
 #include "material.h"
+#include "ray.h"
+#include "vec3.h"
+#include "hittables/hittable.h"
 
-class triangle : public objs {
+
+class triangle : public hittable {
     public: 
         /** 
          * Constructor for a Triangle
          * @param a_t, b_t, c_t: the three edge points of the triangle
          * @param kDiffuse the kDiffuse element for the Phong shading model
          */
-        triangle(const vec3& a_t, const vec3& b_t, const vec3& c_t, const color& kDiffuse, material* mat) : a(a_t), b(b_t), c(c_t), kD(kDiffuse), m(mat) {
+        triangle(const vec3& a_t, const vec3& b_t, const vec3& c_t, shared_ptr<material> mat) : a(a_t), b(b_t), c(c_t), m(mat) {
             bbox = create_aabb();
         }
         
@@ -30,11 +31,7 @@ class triangle : public objs {
             return c;
         }
 
-        color kDiffuse() const {
-            return kD;
-        }
-
-        material* mat() const {
+        shared_ptr<material> mat() const {
             return m;
         }
 
@@ -49,7 +46,7 @@ class triangle : public objs {
         // virtual color kDiffuse() const;
         vec3 surface_normal(const point3 position) const;
         vec3 interpolated_normal(const point3 position) const;
-        bool ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const;
+        bool hit(const ray& r, hit_record& rec, double tmin, double tmax) const;
         aabb create_aabb() const;
         void set_vertex_normals(const vec3& a, const vec3& b, const vec3& c);
         vec3 barycentric_coordinates(const point3 position) const;
@@ -58,12 +55,11 @@ class triangle : public objs {
         point3 a;
         point3 b;
         point3 c;
-        color kD;
         aabb bbox;
         vec3 normal_a;
         vec3 normal_b;
         vec3 normal_c;
-        material* m;
+        shared_ptr<material> m;
 };
 
 /**
@@ -93,7 +89,7 @@ vec3 triangle::interpolated_normal(const point3 position) const {
     return normal_a * bc[0] + normal_b * bc[1] + normal_c * bc[2];
 }
 
-bool triangle::ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const {
+bool triangle::hit(const ray& r, hit_record& rec, double tmin, double tmax) const {
     vec3 e1 = b - a;
     vec3 e2 = c - a;
     vec3 q = cross(r.direction(), e2);
@@ -121,10 +117,10 @@ bool triangle::ray_intersection(const ray& r, hit_record& rec, double tmin, doub
         return false;
     }
     rec.t = t;
-    rec.p = r.at(t);
+    rec.point = r.at(t);
     // rec.set_normal(r, interpolated_normal(rec.p));
-    rec.set_normal(r, surface_normal(rec.p));
-    rec.kD = kD;
+    rec.set_normal(r, surface_normal(rec.point));
+    // rec.kD = kD;
     rec.mat = m;
     return true;
 }
@@ -177,7 +173,7 @@ vec3 triangle::barycentric_coordinates(const point3 position) const {
 }
 
 inline ostream& operator<<(ostream &out, const triangle& t) {
-    return out << "triangle: " << t.kDiffuse();
+    return out << "triangle";
 }
 
 #endif

@@ -1,15 +1,17 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
-#include "objs.h"
+#include "hittables/hittable.h"
 #include "vec3.h"
 #include "ray.h"
 #include "aabb.h"
 #include "material.h"
 
-using std::sqrt;
+#include <cmath>
+#include <math.h>
 
-class sphere : public objs {
+
+class sphere : public hittable {
     public: 
         /** 
          * Constructor for a Sphere
@@ -17,7 +19,8 @@ class sphere : public objs {
          * @param radius the radius for the sphere
          * @param kDiffuse the kDiffuse element for the Phong shading model
          */
-        sphere(const point3& center, const double radius, const color& kDiffuse, material* mat) : c(center), rad(radius), kD(kDiffuse), m(mat) {
+        sphere(const point3& center, const double radius, shared_ptr<material> mat)
+        : c(center), rad(radius), m(mat) {
             bbox = create_aabb();
         }
         point3 center() const {
@@ -28,11 +31,7 @@ class sphere : public objs {
             return rad;
         }
 
-        color kDiffuse() const {
-            return kD;
-        }
-
-        material* mat() const {
+        shared_ptr<material> mat() const {
             return m;
         }
 
@@ -44,24 +43,37 @@ class sphere : public objs {
             return "sphere";
         }
 
-        // virtual color kDiffuse() const;
         virtual vec3 surface_normal(const point3 position) const;
-        virtual bool ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const;
+        virtual bool hit(const ray& r, hit_record& rec, double tmin, double tmax) const;
         aabb create_aabb() const;
+
+    private:
+        /**
+         * Computes uv coordinates at a point on the sphere.
+         * @param p The point to compute the uv coordinates for.
+         * @param u Variable to store the u-coordinate.
+         * @param v Variable to store the v-coordinate.
+         */
+        static void compute_uv(const point3& p, double& u, double& v) {
+            auto theta = acos(-p.y());
+            auto phi = atan2(-p.z(), p.x()) + M_PI;
+
+            u = phi / (2*M_PI);
+            v = theta / M_PI;
+        }
 
     public:
         point3 c;
         double rad;
-        color kD;
         aabb bbox;
-        material* m;
+        shared_ptr<material> m;
 };
 
 vec3 sphere::surface_normal(const point3 position) const {
     return unit_vector(position - c);
 }
 
-bool sphere::ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const {
+bool sphere::hit(const ray& r, hit_record& rec, double tmin, double tmax) const {
     vec3 oc = r.origin() - c;
     double a = r.direction().length_squared();
     double half_b = dot(oc, r.direction());
@@ -81,10 +93,12 @@ bool sphere::ray_intersection(const ray& r, hit_record& rec, double tmin, double
     }
 
     rec.t = root;
-    rec.p = r.at(root);
-    rec.set_normal(r, surface_normal(rec.p));
-    rec.kD = kD;
+    rec.point = r.at(root);
+    rec.set_normal(r, surface_normal(rec.point));
+    this->compute_uv(rec.normal, rec.u, rec.v);
+    // rec.kD = kD;
     rec.mat = m;
+
     return true;
 }
 
