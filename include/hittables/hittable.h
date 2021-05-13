@@ -1,32 +1,30 @@
-#ifndef OBJS_H
-#define OBJS_H
+#ifndef HITTABLE_H
+#define HITTABLE_H
+
+#include <memory>
+#include <stdlib.h>
+#include <vector>
+
+#include "aabb.h"
 #include "ray.h"
 #include "vec3.h"
-#include "aabb.h"
 
-#include <vector>
-#include <stdlib.h>
+using std::shared_ptr;
+using std::make_shared;
 
 class material;
 
+
 /**
- * Stores the important information about a ray-object intersection.
- **/
+ * Structure for storing data about ray-object intersections.
+ */
 struct hit_record {
-    /** the point at which the intersection occurs */
-    point3 p;
-
-    /** the surface normal at the intersection facing away from the object */
+    point3 point;
     vec3 normal;
-
-    /** the value that generates a point on the object and ray */
     double t;
-
-    /** the kDiffuse component for the given object */
-    color kD;
-
-    /** the material of the given given */
-    material* mat;
+    double u, v;
+    // color kD;
+    shared_ptr<material> mat;
 
     /**
      * Determines if the normal faces away from the object and changes it if it doesn't
@@ -39,8 +37,11 @@ struct hit_record {
     }
 };
 
-/** Abstract class designed to hold all possible objects in the image */
-class objs {
+
+/**
+ * Abstract class for hittable objects in the scene.
+ */
+class hittable {
     public:
         /**
          * Determines if there is any intersection between the object and the given ray.
@@ -48,7 +49,7 @@ class objs {
          * @param rec if the ray intersects, this stores information about how it hit
          * @return true or false depending on if it intersects
          **/
-        virtual bool ray_intersection(const ray& r, hit_record& rec, double tmin, double tmax) const = 0;
+        virtual bool hit(const ray& r, hit_record& rec, double tmin, double tmax) const = 0;
         
         /**
          * Calculates the outward surface normal at the given point on the object
@@ -56,12 +57,6 @@ class objs {
          * @return outward facing surface normal
          **/
         virtual vec3 surface_normal(const point3 position) const = 0;
-
-        /**
-         * Getter for the object's main color
-         * @return the kDiffuse component for the object in the Phong shading model
-         **/
-        virtual color kDiffuse() const = 0;
 
         /**
          * Getter for the bounding box of the object. 
