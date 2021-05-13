@@ -2,7 +2,7 @@
  * @file scene_presets.h
  * @author Ian Rudnick
  * Functions to build preset scenes for the raytracer.
- * 
+ *
  * For CS 419 at the University of Illinois at Urbana-Champaign.
  */
 #ifndef SCENE_PRESETS_H
@@ -23,6 +23,7 @@
 #include "hittables/rectangle.h"
 #include "hittables/sphere.h"
 #include "hittables/triangle.h"
+#include "hittables/moving_sphere.h"
 
 using std::shared_ptr;
 using std::make_shared;
@@ -72,6 +73,12 @@ bvh_node default_scene() {
 	point3 s4_center(0.3, -0.43, -0.7);
 	auto s4_radius = 0.07;
 	objects.add(make_shared<sphere>(s4_center, s4_radius, s4_material));
+
+	auto s5_material = make_shared<lambertian>(pink);
+	point3 s5_center0(0.4, 0.3, -0.8);
+	point3 s5_center1(0.5, 0.3, -0.8);
+	double s5_radius = 0.1;
+	objects.add(make_shared<moving_sphere>(s5_center0, s5_center1, 0.0, 1.0, s5_radius, s5_material));
 
 	// Generate a triangle-checkerboard floor.
 	hittable_list checkerboard;

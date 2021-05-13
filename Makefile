@@ -10,8 +10,8 @@ LD		 := g++
 
 # Compiler flags and linker flags
 CXXFLAGS += -Ofast
-CXXFLAGS += -pedantic -Wall -Werror -Wfatal-errors -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
-LDFLAGS	 += 
+CXXFLAGS += -pedantic -Wall -Werror -Wfatal-errors -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -std=c++11
+LDFLAGS	 +=
 
 # Directories we need:
 SRC_DIR	 	 := src
@@ -48,7 +48,7 @@ DEPENDENCIES := $(OBJECTS:.o=.d)
 
 
 # Default. We want to make sure the directories are there, then follow the
-# instructions to build the executable. 
+# instructions to build the executable.
 all: $(TARGET)
 
 # Rule to make the main executable
