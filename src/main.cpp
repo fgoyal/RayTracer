@@ -1,9 +1,9 @@
 /**
  * @file main.cpp
  * @authors Fiza Goyal, Jake Elling, Ian Rudnick
- * 
+ *
  * Main rendering routine for the raytracer.
- * 
+ *
  * Final project for CS 419, Production Computer Graphics, Spring 2021 at the
  * University of Illinois at Urbana Champaign.
  */
@@ -32,6 +32,7 @@
 #include "hittables/rectangle.h"
 #include "hittables/sphere.h"
 #include "hittables/triangle.h"
+#include "hittables/moving_sphere.h"
 
 #include "png/png.h"
 #include "png/rgba_pixel.h"
@@ -71,7 +72,7 @@ const vec3 viewDir = point3(0, 0, -1);
 const vec3 up = vec3(0, 1, 0);
 double dir = 2.0;
 
-const camera cam = camera(eyepoint, viewDir, up, dir, image_width, image_height, s);
+const camera cam = camera(eyepoint, viewDir, up, dir, image_width, image_height, s, 0.0, 1.0);
 
 // Objects
 const int NUM_OBJECTS = 10;
@@ -125,7 +126,7 @@ color phong_reflection(vec3 N, point3 position, vec3 kDiffuse) {
     vec3 specular = kSpecular * specularLight * iSpecular;
     color c = ambient + diffuse + specular;
     return vec_clamp(c, 0.0, 1.0);
-}
+} 
 
 /**
  * Generates a shadow ray for all hit points and determines if it will be in shadow or not.
@@ -179,7 +180,7 @@ color ray_color(const ray& r, int depth) {
         // to_return = phong_reflection(rec.normal, rec.p, rec.kD);
         // to_return = apply_shadows(to_return, rec);
         return to_return;
-    }  
+    }
     // return sky;
     return dark_gray;
 }

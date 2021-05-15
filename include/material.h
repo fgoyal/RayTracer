@@ -39,7 +39,7 @@ class material {
  * Class for diffuse/lambertian objects
  */
 class lambertian : public material {
-    public: 
+    public:
         lambertian(const color& mat_color) : c(mat_color) {}
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override {
@@ -47,11 +47,11 @@ class lambertian : public material {
             if (scatter_direction.near_zero()) {
                 scatter_direction = rec.normal;
             }
-            scattered = ray(rec.point, scatter_direction);
+            scattered = ray(rec.point, scatter_direction, r.time());
             attenuation = this->c;
             return true;
         }
-    
+
     public:
         color c;
 };
@@ -60,12 +60,12 @@ class lambertian : public material {
  * Class for objects that are reflective or mirror-like
  */
 class mirror : public material {
-    public: 
+    public:
         mirror(const color& mat_color, double f) : c(mat_color), fuzz(f < 1 ? f : 1) {}
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             vec3 reflected = reflect(r.direction(), rec.normal);
-            scattered = ray(rec.point, reflected + fuzz * random_in_unit_sphere());
+            scattered = ray(rec.point, reflected + fuzz * random_in_unit_sphere(), r.time());
             attenuation = this->c;
             return (dot(scattered.direction(), rec.normal) > 0);
         }
@@ -79,7 +79,7 @@ class mirror : public material {
  * Class for objects that are transparent or glass-like
  */
 class glass : public material {
-    public: 
+    public:
         glass(const color& mat_color, double index) : c(mat_color), ior(index) {}
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
@@ -102,7 +102,7 @@ class glass : public material {
             } else {
                 direction = refract(unit_direction, n, refraction_ratio);
             }
-            scattered = ray(rec.point, direction);
+            scattered = ray(rec.point, direction, r.time());
             attenuation = this->c;
             return true;
         }
@@ -110,8 +110,8 @@ class glass : public material {
     public:
         color c;
         double ior;
-    
-    private: 
+
+    private:
         /**
          * Schlick's approximation for reflectance
          */
@@ -126,7 +126,7 @@ class glass : public material {
  * Class for area lights aka objects that emit their own light
  */
 class area_light : public material {
-    public: 
+    public:
         area_light(const color& emit) : c(emit) {}
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             return false;
