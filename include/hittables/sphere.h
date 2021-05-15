@@ -23,6 +23,7 @@ class sphere : public hittable {
         : c(center), rad(radius), m(mat) {
             bbox = create_aabb();
         }
+        
         point3 center() const {
             return c;
         }

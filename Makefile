@@ -9,7 +9,7 @@ CXX      := g++
 LD		 := g++
 
 # Compiler flags and linker flags
-CXXFLAGS += -Ofast
+CXXFLAGS += -Ofast -std=c++11
 CXXFLAGS += -pedantic -Wall -Werror -Wfatal-errors -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
 LDFLAGS	 += 
 

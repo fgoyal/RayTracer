@@ -43,6 +43,8 @@ struct hit_record {
  */
 class hittable {
     public:
+        virtual ~hittable() = default;
+
         /**
          * Determines if there is any intersection between the object and the given ray.
          * @param r the ray that intersects with the object

@@ -50,14 +50,14 @@ using rudnick_rt::PNG;
 // --------------------------------------- VARIABLES --------------------------------------- //
 static bool perspective = true;
 static bool multisampling = true;
-static const int fine_grid = 64;
+static const int fine_grid = 256;
 static int coarse_grid = (int) std::sqrt(fine_grid);
 const int max_depth = 50;
 double infinity = numeric_limits<double>::infinity();
 
 // Image
-const static double aspect_ratio = 1.0 / 1.0;
-const static int image_width = 400;
+const static double aspect_ratio = 16.0 / 9.0;
+const static int image_width = 640;
 const static int image_height = static_cast<int>(image_width / aspect_ratio);
 
 // Camera
@@ -65,13 +65,15 @@ const float viewport_width = 4.0;
 const float s = viewport_width / image_width;
 const vec3 direction = vec3(0, 0, -1);
 
-// const point3 eyepoint = point3(0, 1, 10);
-const point3 eyepoint = point3(0, 0, 0);
-const vec3 viewDir = point3(0, 0, -1);
+const point3 eye_point = point3(0, 0, 0);
+//const point3 eye_point(10, 3, 5);
+const point3 look_at_point(0, 0, -1);
 const vec3 up = vec3(0, 1, 0);
-double dir = 2.0;
+double dir = 3.5;
 
-const camera cam = camera(eyepoint, viewDir, up, dir, image_width, image_height, s);
+const camera cam = camera(eye_point, look_at_point, up, dir, image_width, image_height, s);
+
+static color background(0.8, 0.9, 0.99);
 
 // Objects
 const int NUM_OBJECTS = 10;
@@ -79,14 +81,11 @@ const double sphere_radius = 0.5;
 vector<shared_ptr<hittable>> objects;
 bvh_node scene;
 
-// Lighting and Shading
+// Phong shading parameters
 const vec3 lightPosition = vec3(0.75, 0.75, 0.5);
-
 const vec3 kAmbient = vec3(1, 1, 1);
 const vec3 iAmbient = vec3(0,0,0);
-
 const vec3 iDiffuse = vec3(1,1,1);
-
 const vec3 kSpecular = vec3(1,1,1);
 const vec3 iSpecular = vec3(1,1,1);
 const float shininess = 20;
@@ -115,7 +114,7 @@ color gamma_correction(color& c) {
  */
 color phong_reflection(vec3 N, point3 position, vec3 kDiffuse) {
     vec3 L = unit_vector(lightPosition - position); // light vector
-    vec3 V = unit_vector(eyepoint - position);
+    vec3 V = unit_vector(eye_point - position);
     vec3 R = unit_vector(reflect(L, N));
     double diffuseLight = fmax(dot(L, N), 0.0);
     double specularLight = fmax(pow(dot(R, V), shininess), 0.0);
@@ -155,33 +154,30 @@ color apply_shadows(color original, hit_record rec) {
  * @return the final color at the point after shading and shadows
  */
 color ray_color(const ray& r, int depth) {
-    // color sky         = color(173, 225, 255) / 255.0;
-    color black       = color(0.0, 0.0, 0.0);
-    color dark_gray   = color(0.2, 0.2, 0.2);
-
     if (depth <= 0) {
-        return black;
+        return color(0.0, 0.0, 0.0);
     }
 
     hit_record rec;
     bool hit = scene.hit(r, rec, 0.001, infinity);
 
-    color to_return;
+    color output;
     if (hit) {
         ray scattered;
         color attenuation;
         color emitted = rec.mat->emitted();
+
         if (rec.mat->scatter(r, rec, scattered, attenuation)) {
-            to_return = emitted + attenuation * ray_color(scattered, depth - 1);
-        } else {
-            return emitted;
+            output = emitted + attenuation * ray_color(scattered, depth - 1);
         }
-        // to_return = phong_reflection(rec.normal, rec.p, rec.kD);
-        // to_return = apply_shadows(to_return, rec);
-        return to_return;
-    }  
-    // return sky;
-    return dark_gray;
+        else {
+            output = emitted;
+        }
+
+        return output;
+    }
+
+    return background;
 }
 
 /**
@@ -285,7 +281,7 @@ int main(int argc, char* argv[]) {
     set_command_line_args(argc, argv);
 
     // Set up the scene.
-    scene = default_scene();
+    scene = three_spheres();
 
     // Print performance info
     cout << "Image dimensions: " << image_width << "x" << image_height << "\n";
