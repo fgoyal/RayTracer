@@ -51,14 +51,14 @@ using rudnick_rt::PNG;
 // --------------------------------------- VARIABLES --------------------------------------- //
 static bool perspective = true;
 static bool multisampling = true;
-static const int fine_grid = 256;
+static const int fine_grid = 128;
 static int coarse_grid = (int) std::sqrt(fine_grid);
 const int max_depth = 50;
 double infinity = numeric_limits<double>::infinity();
 
 // Image
 const static double aspect_ratio = 16.0 / 9.0;
-const static int image_width = 640;
+const static int image_width = 200;
 const static int image_height = static_cast<int>(image_width / aspect_ratio);
 
 // Camera
@@ -125,7 +125,7 @@ color phong_reflection(vec3 N, point3 position, vec3 kDiffuse) {
     vec3 specular = kSpecular * specularLight * iSpecular;
     color c = ambient + diffuse + specular;
     return vec_clamp(c, 0.0, 1.0);
-} 
+}
 
 /**
  * Generates a shadow ray for all hit points and determines if it will be in shadow or not.

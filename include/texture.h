@@ -34,6 +34,8 @@ public:
  */
 class solid_color_texture : public texture {
 public:
+	virtual ~solid_color_texture() = default;
+
 	/**
 	 * Constructs a default solid color texture.
 	 * Sets the texture color to white.
@@ -74,6 +76,7 @@ private:
  */
 class checker_texture : public texture {
 public:
+	virtual ~checker_texture() = default;
 	checker_texture() {}
 
 	checker_texture(shared_ptr<texture> even, shared_ptr<texture> odd)
@@ -101,6 +104,7 @@ private:
 //-----------------------------------------------------------------------------
 class noise_texture : public texture {
 public:
+	virtual ~noise_texture() = default;
 	noise_texture() {}
 	noise_texture(double sc) : scale_(sc) {}
 
@@ -129,7 +133,7 @@ public:
 	 */
 	image_texture()
 		: data_(nullptr), width_(0), height_(0), bytes_per_scanline_(0) {}
-	
+
 	/**
 	 * Constructs an image texture from a given image file.
 	 */
@@ -138,7 +142,7 @@ public:
 
 		this->data_ =
 			stbi_load(filename.c_str(), &this->width_, &this->height_, &channels, 0);
-		
+
 		if (!this->data_) {
 			std::cerr << "Error loading texture image file '" << filename << "'.\n";
 			this->width_ = this->height_ = 0;
@@ -150,7 +154,7 @@ public:
 	/**
 	 * Frees the image data array.
 	 */
-	~image_texture() {
+	virtual ~image_texture() {
 		stbi_image_free(this->data_);
 	}
 
