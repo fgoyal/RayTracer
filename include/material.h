@@ -55,11 +55,11 @@ class lambertian : public material {
             if (scatter_direction.near_zero()) {
                 scatter_direction = rec.normal;
             }
-            scattered = ray(rec.point, scatter_direction);
+            scattered = ray(rec.point, scatter_direction, r.time());
             attenuation = this->texture_->value(rec.u, rec.v, rec.point);
             return true;
         }
-    
+
     public:
         shared_ptr<texture> texture_;
 };
@@ -77,7 +77,7 @@ class mirror : public material {
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             vec3 reflected = reflect(r.direction(), rec.normal);
-            scattered = ray(rec.point, reflected + fuzz_ * random_in_unit_sphere());
+            scattered = ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(), r.time());
             attenuation = this->texture_->value(rec.u, rec.v, rec.point);
             return (dot(scattered.direction(), rec.normal) > 0);
         }
@@ -114,7 +114,7 @@ class dielectric : public material {
             } else {
                 direction = refract(unit_direction, n, refraction_ratio);
             }
-            scattered = ray(rec.point, direction);
+            scattered = ray(rec.point, direction, r.time());
             attenuation = this->c;
             return true;
         }
@@ -122,8 +122,8 @@ class dielectric : public material {
     public:
         color c;
         double ior;
-    
-    private: 
+
+    private:
         /**
          * Schlick's approximation for reflectance
          */
@@ -138,7 +138,7 @@ class dielectric : public material {
  * Class for area lights aka objects that emit their own light
  */
 class area_light : public material {
-    public: 
+    public:
         area_light(const color& emit) : c(emit) {}
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             return false;
