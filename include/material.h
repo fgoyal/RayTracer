@@ -4,17 +4,21 @@
 #include <memory>
 
 #include "ray.h"
+#include "texture.h"
 #include "utils.h"
 #include "vec3.h"
 #include "hittables/hittable.h"
-#include "texture/texture.h"
 
+using std::shared_ptr;
+using std::make_shared;
 
 /**
  * Abstract class for materials.
  */
 class material {
     public:
+        virtual ~material() = default;
+
         /**
          * Produces a scattered ray
          * @param r: the ray being shot at the material
@@ -40,7 +44,11 @@ class material {
  */
 class lambertian : public material {
     public:
-        lambertian(const color& mat_color) : c(mat_color) {}
+        lambertian(const color& c)
+        : texture_(make_shared<solid_color_texture>(c)) {}
+
+        lambertian(shared_ptr<texture> t)
+        : texture_(t) {}
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override {
             vec3 scatter_direction = rec.normal + random_unit_vector();
@@ -48,39 +56,43 @@ class lambertian : public material {
                 scatter_direction = rec.normal;
             }
             scattered = ray(rec.point, scatter_direction, r.time());
-            attenuation = this->c;
+            attenuation = this->texture_->value(rec.u, rec.v, rec.point);
             return true;
         }
 
     public:
-        color c;
+        shared_ptr<texture> texture_;
 };
 
 /**
- * Class for objects that are reflective or mirror-like
+ * Class for reflective materials.
  */
 class mirror : public material {
     public:
-        mirror(const color& mat_color, double f) : c(mat_color), fuzz(f < 1 ? f : 1) {}
+        mirror(const color& c, double f)
+        : texture_(make_shared<solid_color_texture>(c)), fuzz_(f<1 ? f : 1) {}
+
+        mirror(shared_ptr<texture> t, double f)
+        : texture_(t), fuzz_(f<1 ? f : 1) {}
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             vec3 reflected = reflect(r.direction(), rec.normal);
-            scattered = ray(rec.point, reflected + fuzz * random_in_unit_sphere(), r.time());
-            attenuation = this->c;
+            scattered = ray(rec.point, reflected + fuzz_ * random_in_unit_sphere(), r.time());
+            attenuation = this->texture_->value(rec.u, rec.v, rec.point);
             return (dot(scattered.direction(), rec.normal) > 0);
         }
 
     public:
-        color c;
-        double fuzz;
+        shared_ptr<texture> texture_;
+        double fuzz_;
 };
 
 /**
- * Class for objects that are transparent or glass-like
+ * Class for transparent materials.
  */
-class glass : public material {
-    public:
-        glass(const color& mat_color, double index) : c(mat_color), ior(index) {}
+class dielectric : public material {
+    public: 
+        dielectric(const color& mat_color, double index) : c(mat_color), ior(index) {}
 
         virtual bool scatter(const ray& r, const hit_record& rec, ray& scattered, color& attenuation) const override{
             double refraction_ratio;

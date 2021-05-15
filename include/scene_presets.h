@@ -14,12 +14,14 @@
 
 #include "material.h"
 #include "mesh.h"
+#include "texture.h"
 #include "utils.h"
 #include "vec3.h"
 
 #include "hittables/hittable.h"
 #include "hittables/hittable_list.h"
 #include "hittables/bvh_node.h"
+#include "hittables/plane.h"
 #include "hittables/rectangle.h"
 #include "hittables/sphere.h"
 #include "hittables/triangle.h"
@@ -27,6 +29,79 @@
 
 using std::shared_ptr;
 using std::make_shared;
+
+
+//-----------------------------------------------------------------------------
+/**
+ * Creates a simple scene with three spheres for texture testing.
+ */
+bvh_node three_spheres() {
+	hittable_list world;
+
+	auto perlin_texture = make_shared<noise_texture>(10);
+
+	auto floor_texture = make_shared<checker_texture>(color(0.3, 0.4, 0.5), color(0.9, 0.9, 0.9));
+	auto floor_material = make_shared<lambertian>(floor_texture);
+	world.add(make_shared<rectangle>(point3(-10, -0.5, -10), 
+									 point3(-10, -0.5,  10),
+									 point3( 10, -0.5,  10),
+									 point3( 10, -0.5, -10), floor_material));
+
+	auto wall_texture = make_shared<solid_color_texture>(color(0.5, 0.4, 0.3));
+	auto wall_material = make_shared<lambertian>(wall_texture);
+	world.add(make_shared<rectangle>(point3(-1.5, -0.5, -4),
+									 point3(-1.5,  2.0, -4),
+									 point3( 1.5,  2.0, -4),
+									 point3( 1.5, -0.5, -4), wall_material));
+
+	world.add(make_shared<rectangle>(point3(-1.5, -0.5, -4),
+									 point3(-1.5,  2.0, -4),
+									 point3(-1.5,  2.0, 1),
+									 point3(-1.5, -0.5, 1), wall_material));
+	
+	world.add(make_shared<rectangle>(point3( 1.5, -0.5, -4),
+									 point3( 1.5,  2.0, -4),
+									 point3( 1.5,  2.0, 1),
+									 point3( 1.5, -0.5, 1), wall_material));
+
+	world.add(make_shared<rectangle>(point3(-1.5, -0.5, 1),
+									 point3(-1.5,  2.0, 1),
+									 point3( 1.5,  2.0, 1),
+									 point3( 1.5, -0.5, 1), wall_material));
+
+	// Middle sphere
+	//auto texture1 = make_shared<solid_color_texture>(color(1, 0.2, 0.8));
+	auto earth_texture = make_shared<image_texture>("data/earthmap.jpg");
+	auto material1 = make_shared<lambertian>(earth_texture);
+	world.add(make_shared<sphere>(point3(0, 0, -2.5), 0.4, material1));
+
+	// Middle sphere dielectric for subsurface reflection
+	auto material_surface = make_shared<dielectric>(color(1, 1, 1), 1.5);
+	world.add(make_shared<sphere>(point3(0, 0, -2.5), 0.5, material_surface));
+
+	// Right lambertian sphere
+	//auto texture2 = make_shared<solid_color_texture>(color(0.1, 0.7, 0.7));
+	auto material2 = make_shared<lambertian>(perlin_texture);
+	world.add(make_shared<sphere>(point3(0.6, -0.2, -2.0), 0.3, material2));
+
+	// Left metal sphere
+	//auto texture3 = make_shared<solid_color_texture>(color(0.7, 0.6, 0.5));
+	auto material3 = make_shared<mirror>(perlin_texture, 0.1);
+	world.add(make_shared<sphere>(point3(-1, -0.2, -3.0), 0.3, material3));
+
+	// Light source
+	auto light_material1 = make_shared<area_light>(color(10, 10, 10));
+	auto light_material2 = make_shared<area_light>(color(2, 2, 2));
+	world.add(make_shared<sphere>(point3(-1, 1.0, 0), 0.3, light_material1));
+
+	world.add(make_shared<rectangle>(point3(-1.5, 2.0, -4),
+									 point3(-1.5, 2.0, 1),
+									 point3( 1.5, 2.0, 1),
+									 point3( 1.5, 2.0, -4), light_material2));
+
+	return bvh_node(world);
+}
+
 
 //-----------------------------------------------------------------------------
 /**
@@ -59,7 +134,7 @@ bvh_node default_scene() {
 	auto s1_radius = 0.3;
 	objects.add(make_shared<sphere>(s1_center, s1_radius, s1_material));
 
-	auto s2_material = make_shared<glass>(white, 1.5);
+	auto s2_material = make_shared<dielectric>(white, 1.5);
 	point3 s2_center(0.4, -0.3, -1);
 	auto s2_radius = 0.2;
 	objects.add(make_shared<sphere>(s2_center, s2_radius, s2_material));

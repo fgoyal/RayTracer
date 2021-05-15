@@ -13,6 +13,7 @@ CXXFLAGS += -Ofast
 CXXFLAGS += -pedantic -Wall -Werror -Wfatal-errors -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -std=c++11
 LDFLAGS	 +=
 
+
 # Directories we need:
 SRC_DIR	 	 := src
 INC_DIR		 := include
